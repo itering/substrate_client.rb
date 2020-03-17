@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+require "substrate_client"
+
+client = SubstrateClient.new("wss://kusama-rpc.polkadot.io/")
+# puts client.system_name
+# puts client.system_chain
+# puts client.system_version
+# puts client.system_peers
+# puts client.state_getStorage "0x0b76934f4cc08dee01012d059e1b83ee5e0621c4869aa60c02be9adcc98a0d1d"
+# puts client.state_getChildKeys "0x","0x",1,"0x"
+# puts client.runtime_getState "System", "Events",[],"0xe0303fbe2bc8482e06fb649f934c41349d12a25bd618c92e3331a3347e434f7b"
+puts client.rpc_methods
