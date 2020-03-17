@@ -4,7 +4,7 @@ PATH
     substrate_client (0.1.0)
       eventmachine (~> 1.2.7)
       faye-websocket (~> 0.10.9)
-      substrate_common.rb (~> 0.1.5)
+      substrate_common.rb (~> 0.1.6)
 
 GEM
   remote: https://rubygems.org/
@@ -35,7 +35,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.9.0)
     rspec-support (3.9.2)
-    substrate_common.rb (0.1.5)
+    substrate_common.rb (0.1.6)
       base58
       blake2b
       xxhash
