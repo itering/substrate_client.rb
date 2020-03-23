@@ -1,8 +1,6 @@
 # SubstrateClient
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/substrate_client`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+This is a library of interfaces for communicating with Substrate nodes. It provides application developers the ability to query a node and interact with the Substrate chains using Ruby.
 
 ## Installation
 
@@ -32,7 +30,7 @@ require "substrate_client"
 client = SubstrateClient.new("wss://kusama-rpc.polkadot.io/")
 puts client.rpc_methods["methods"]
 ```
-The rpc methods is dynamically generated, so the api returned by this method can be called.
+The rpc api methods is dynamically generated, so the methods returned by this method can be called.
 
 ## Development
 

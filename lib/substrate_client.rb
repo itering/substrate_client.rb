@@ -52,12 +52,15 @@ class SubstrateClient
     ws_request(@url, payload)
   end
 
+  # general api method
   def method_missing(method, *args)
     data = request(method, args)
     data["result"]
   end
 
-  # hasher: xxhash_128, black2_256
+  
+
+  # hasher: 'xxhash_128', 'black2_256'
   def self.generate_storage_hash(storage_module_name, storage_function_name, params = nil, hasher = nil, metadata_version = nil)
     if metadata_version and metadata_version >= 9
       storage_hash = Crypto.xxhash_128(storage_module_name) + Crypto.xxhash_128(storage_function_name)
