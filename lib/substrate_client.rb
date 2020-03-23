@@ -4,6 +4,8 @@ require "substrate_common"
 require "faye/websocket"
 require "eventmachine"
 require "json"
+require 'active_support'
+require "active_support/core_ext/string"
 
 def ws_request(url, payload)
   result = nil
@@ -52,37 +54,57 @@ class SubstrateClient
     ws_request(@url, payload)
   end
 
-  # general api method
+  # ############################
+  # native rpc methods support
+  # ############################
   def method_missing(method, *args)
-    data = request(method, args)
+    data = request(SubstrateClient.real_method_name(method), args)
     data["result"]
   end
 
-  
-
-  # hasher: 'xxhash_128', 'black2_256'
-  def self.generate_storage_hash(storage_module_name, storage_function_name, params = nil, hasher = nil, metadata_version = nil)
-    if metadata_version and metadata_version >= 9
-      storage_hash = Crypto.xxhash_128(storage_module_name) + Crypto.xxhash_128(storage_function_name)
-
-      params = [params] if params.class != ::Array
-      params_key = params.join("")
-      hasher = "xxhash_128" if hasher.nil?
-      storage_hash += Crypto.send hasher, params_key.hex_to_bytes.bytes_to_utf8
-
-      "0x#{storage_hash}"
-    else
-      # TODO: add test
-      storage_hash = storage_module_name + " " + storage_function_name
-
-      params = [params] if params.class != ::Array
-      params_key = params.join("")
-      hasher = "xxhash_128" if hasher.nil?
-      storage_hash += params_key.hex_to_bytes.bytes_to_utf8 
-
-      "0x#{Crypto.send( hasher, storage_hash )}"
-    end
+  # ################################################
+  # custom methods wrapped from native rpc methods
+  # ################################################
+  def method_list
+    methods = self.rpc_methods["methods"].map(&:underscore)
+    methods << "method_list"
   end
+
+  class << self
+    # hasher: 'xxhash_128', 'black2_256'
+    def generate_storage_hash(storage_module_name, storage_function_name, params = nil, hasher = nil, metadata_version = nil)
+      if metadata_version and metadata_version >= 9
+        storage_hash = Crypto.xxhash_128(storage_module_name) + Crypto.xxhash_128(storage_function_name)
+
+        params = [params] if params.class != ::Array
+        params_key = params.join("")
+        hasher = "xxhash_128" if hasher.nil?
+        storage_hash += Crypto.send hasher, params_key.hex_to_bytes.bytes_to_utf8
+
+        "0x#{storage_hash}"
+      else
+        # TODO: add test
+        storage_hash = storage_module_name + " " + storage_function_name
+
+        params = [params] if params.class != ::Array
+        params_key = params.join("")
+        hasher = "xxhash_128" if hasher.nil?
+        storage_hash += params_key.hex_to_bytes.bytes_to_utf8 
+
+        "0x#{Crypto.send( hasher, storage_hash )}"
+      end
+    end
+
+    # chain_unsubscribe_runtime_version
+    # => 
+    # chain_unsubscribeRuntimeVersion
+    def real_method_name(method_name)
+      segments = method_name.to_s.split("_")
+      segments[0] + "_" + segments[1] + segments[2..].map(&:capitalize).join
+    end
+
+  end
+
 
 end
 
