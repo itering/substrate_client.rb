@@ -46,6 +46,7 @@ class SubstrateClient
     @request_id = 1
   end
 
+  # TODO: error
   def request(method, params)
     payload = {
       "jsonrpc" => "2.0",
@@ -73,6 +74,7 @@ class SubstrateClient
     methods << "method_list"
   end
 
+  # TODO: add cache
   def init(block_hash = nil)
     block_runtime_version = self.state_get_runtime_version(block_hash)
     @spec_name = block_runtime_version["specName"]
@@ -80,6 +82,7 @@ class SubstrateClient
 
     Scale::TypeRegistry.instance.load(spec_name, spec_version)
     @metadata = self.get_metadata(block_hash)
+    true
   end
 
   def get_metadata(block_hash)
@@ -88,26 +91,24 @@ class SubstrateClient
   end
 
   # client.get_storage("Balances", "Account", "0xb8c725ae2dfca19e469628eea1e2523ac75b4b829bb40a27d0dc5c72eaa9f225", "0x6ba283b175e29c1dcbafa311b7b2a6fbfaea1e62a84713dd2808b06665ef3026")
-  # client.get_storage("Balances", "TotalIssuance", nil, "0x6ba283b175e29c1dcbafa311b7b2a6fbfaea1e62a84713dd2808b06665ef3026")
-  def get_storage_at(module_name, storage_function_name, params = nil, block_hash)
-    # TODO: add cache
-    init(block_hash)
+  # client.get_storage("Balances", "Account", ["0x6ce96ae5c300096b09dbd4567b0574f6a1281ae0e5cfe4f6b0233d1821f6206b"])
+  def get_storage_at(module_name, storage_function_name, params = nil)
 
+    # TODO: uninit raise a exception
     # find the storage item from metadata
     metadata_modules = @metadata.value.value[:metadata][:modules]
     metadata_module = metadata_modules.detect { |mm| mm[:name] == module_name }
     raise "Module '#{module_name}' not exist" unless metadata_module
     storage_item = metadata_module[:storage][:items].detect { |item| item[:name] == storage_function_name }
+    raise "Storage item '#{storage_function_name}' not exist. \n#{metadata_module.inspect}" unless storage_item
 
     if return_type = storage_item[:type][:Plain]
-      hasher = "xxhash_128"
+      hasher = "Twox64Concat"
     elsif map = storage_item[:type][:Map]
-      params = [params] if params.class != ::Array
-      raise "Storage call of type \"Map\" requires 1 parameter" if params.nil? || params.length != 1
+      raise "Storage call of type \"Map\" requires 1 param" if params.nil? || params.length != 1
+      raise "Storage call of type \"Map\" requires array params" if params.class != ::Array
 
-      # Identity
-      hasher = "xxhash_128" if map[:hasher] == "Twox64Concat"
-      hasher = "black2_256" if map[:hasher] == "Blake2_128Concat"
+      hasher = map[:hasher]
       return_type = map[:value]
 
       # TODO: decode to account id if param is address
@@ -136,25 +137,27 @@ class SubstrateClient
   end
 
   class << self
-    # hasher: 'xxhash_128', 'black2_256'
     def generate_storage_hash(storage_module_name, storage_function_name, params = nil, hasher = nil, metadata_version = nil)
       if metadata_version and metadata_version >= 9
-        storage_hash = Crypto.xxhash_128(storage_module_name) + Crypto.xxhash_128(storage_function_name)
+        storage_hash = Crypto.twox128(storage_module_name) + Crypto.twox128(storage_function_name)
 
-        params = [params] if params.class != ::Array
-        params_key = params.join("")
-        hasher = "xxhash_128" if hasher.nil?
-        storage_hash += Crypto.send hasher, params_key.hex_to_bytes.bytes_to_utf8
+        if params
+          params_key = params[0].hex_to_bytes
+          hasher = "Twox128" if hasher.nil?
+          storage_hash += Crypto.send hasher.underscore, params_key
+        end
 
         "0x#{storage_hash}"
       else
         # TODO: add test
         storage_hash = storage_module_name + " " + storage_function_name
 
-        params = [params] if params.class != ::Array
-        params_key = params.join("")
-        hasher = "xxhash_128" if hasher.nil?
-        storage_hash += params_key.hex_to_bytes.bytes_to_utf8 
+        unless params.nil?
+          params = [params] if params.class != ::Array
+          params_key = params.join("")
+          hasher = "Twox128" if hasher.nil?
+          storage_hash += params_key.hex_to_bytes.bytes_to_utf8 
+        end
 
         "0x#{Crypto.send( hasher, storage_hash )}"
       end
