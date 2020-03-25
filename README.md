@@ -35,7 +35,7 @@ The rpc api methods is dynamically generated, so the methods returned by this me
 - [x] ws wss request support
 - [ ] http request support
 - [x] generate storage key
-- [x] call any apis substrate node supported with ruby's method missing function
+- [x] call any api supported by substrate node with ruby's method missing function
 - [ ] metadata caching
 
 ## Development
