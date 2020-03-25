@@ -72,6 +72,8 @@ class SubstrateClient
   def method_list
     methods = self.rpc_methods["methods"].map(&:underscore)
     methods << "method_list"
+    methods << "get_storage_at"
+    methods << "get_metadata"
   end
 
   # TODO: add cache

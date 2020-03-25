@@ -20,17 +20,23 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
-
-## Api list
+### Api list
 
 ```ruby
 require "substrate_client"
 
 client = SubstrateClient.new("wss://kusama-rpc.polkadot.io/")
-puts client.rpc_methods["methods"]
+puts client.method_list
 ```
 The rpc api methods is dynamically generated, so the methods returned by this method can be called.
+
+## TODO
+
+- [x] ws wss request support
+- [ ] http request support
+- [x] generate storage key
+- [x] call any apis substrate node supported with ruby's method missing function
+- [ ] metadata caching
 
 ## Development
 
