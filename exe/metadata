@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+require "substrate_client"
+require "json"
+
+client = SubstrateClient.new("wss://cc3-5.kusama.network/")
+client.init
+puts JSON.pretty_generate(client.metadata.value.value)

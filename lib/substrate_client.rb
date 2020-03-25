@@ -39,7 +39,7 @@ def ws_request(url, payload)
 end
 
 class SubstrateClient
-  attr_accessor :spec_name, :spec_version
+  attr_accessor :spec_name, :spec_version, :metadata
 
   def initialize(url)
     @url = url
@@ -101,21 +101,26 @@ class SubstrateClient
     raise "Module '#{module_name}' not exist" unless metadata_module
     storage_item = metadata_module[:storage][:items].detect { |item| item[:name] == storage_function_name }
     raise "Storage item '#{storage_function_name}' not exist. \n#{metadata_module.inspect}" unless storage_item
+    puts metadata_module.inspect
 
     if return_type = storage_item[:type][:Plain]
       hasher = "Twox64Concat"
     elsif map = storage_item[:type][:Map]
-      raise "Storage call of type \"Map\" requires 1 param" if params.nil? || params.length != 1
-      raise "Storage call of type \"Map\" requires array params" if params.class != ::Array
+      raise "Storage call of type \"Map\" requires 1 parameter" if params.nil? || params.length != 1
 
       hasher = map[:hasher]
       return_type = map[:value]
-
       # TODO: decode to account id if param is address
-      # if map[:key] == "AccountId"
-        # params[0] = decode(params[0])
-      # end
+      # params[0] = decode(params[0]) if map[:key] == "AccountId"
       params[0] = Scale::Types.get(map[:key]).new(params[0]).encode
+    elsif map = storage_item[:type][:DoubleMap]
+      raise "Storage call of type \"DoubleMapType\" requires 2 parameters" if params.nil? || params.length != 2
+
+      hasher = map[:hasher]
+      hasher2 = map[:key2Hasher]
+      return_type = map[:value]
+      params[0] = Scale::Types.get(map[:key1]).new(params[0]).encode
+      params[1] = Scale::Types.get(map[:key2]).new(params[1]).encode
     else
       raise NotImplementedError
     end
@@ -125,8 +130,11 @@ class SubstrateClient
       storage_function_name,
       params,
       hasher,
+      hasher2,
       @metadata.value.value[:metadata][:version]
     )
+
+    puts storage_hash
 
     result = self.state_get_storage_at(storage_hash, block_hash)
     return unless result
@@ -137,14 +145,24 @@ class SubstrateClient
   end
 
   class << self
-    def generate_storage_hash(storage_module_name, storage_function_name, params = nil, hasher = nil, metadata_version = nil)
+    def generate_storage_hash(storage_module_name, storage_function_name, params = nil, hasher = nil, hasher2 = nil, metadata_version = nil)
       if metadata_version and metadata_version >= 9
         storage_hash = Crypto.twox128(storage_module_name) + Crypto.twox128(storage_function_name)
 
         if params
-          params_key = params[0].hex_to_bytes
-          hasher = "Twox128" if hasher.nil?
-          storage_hash += Crypto.send hasher.underscore, params_key
+          params.each_with_index do |param, index|
+            if index == 0
+              param_hasher = hasher
+            elsif index == 1
+              param_hasher = hasher2
+            else
+              raise "Unexpected third parameter for storage call"
+            end
+
+            param_key = param.hex_to_bytes
+            param_hasher = "Twox128" if param_hasher.nil?
+            storage_hash += Crypto.send param_hasher.underscore, param_key
+          end
         end
 
         "0x#{storage_hash}"
@@ -159,7 +177,7 @@ class SubstrateClient
           storage_hash += params_key.hex_to_bytes.bytes_to_utf8 
         end
 
-        "0x#{Crypto.send( hasher, storage_hash )}"
+        "0x#{Crypto.send( hasher.underscore, storage_hash )}"
       end
     end
 
