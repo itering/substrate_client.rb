@@ -90,8 +90,10 @@ class SubstrateClient
     Scale::Types::Metadata.decode(Scale::Bytes.new(hex))
   end
 
-  # client.get_storage("Balances", "Account", "0xb8c725ae2dfca19e469628eea1e2523ac75b4b829bb40a27d0dc5c72eaa9f225", "0x6ba283b175e29c1dcbafa311b7b2a6fbfaea1e62a84713dd2808b06665ef3026")
-  # client.get_storage("Balances", "Account", ["0x6ce96ae5c300096b09dbd4567b0574f6a1281ae0e5cfe4f6b0233d1821f6206b"])
+  # client.init(0x014e4248dd04a8c0342b603a66df0691361ac58e69595e248219afa7af87bdc7)
+  # Plain: client.get_storage_at("Balances", "TotalIssuance")
+  # Map: client.get_storage_at("System", "Account", ["0x30599dba50b5f3ba0b36f856a761eb3c0aee61e830d4beb448ef94b6ad92be39"])
+  # DoubleMap: client.get_storage_at("ImOnline", "AuthoredBlocks", [2818, "0x749ddc93a65dfec3af27cc7478212cb7d4b0c0357fef35a0163966ab5333b757"])
   def get_storage_at(module_name, storage_function_name, params = nil)
 
     # TODO: uninit raise a exception
@@ -101,7 +103,6 @@ class SubstrateClient
     raise "Module '#{module_name}' not exist" unless metadata_module
     storage_item = metadata_module[:storage][:items].detect { |item| item[:name] == storage_function_name }
     raise "Storage item '#{storage_function_name}' not exist. \n#{metadata_module.inspect}" unless storage_item
-    puts metadata_module.inspect
 
     if return_type = storage_item[:type][:Plain]
       hasher = "Twox64Concat"
@@ -134,7 +135,7 @@ class SubstrateClient
       @metadata.value.value[:metadata][:version]
     )
 
-    puts storage_hash
+    # puts storage_hash
 
     result = self.state_get_storage_at(storage_hash, block_hash)
     return unless result
