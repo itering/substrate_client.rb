@@ -15,4 +15,4 @@ client = SubstrateClient.new("wss://cc3-5.kusama.network/")
 
 client.init
 metadata = client.metadata
-puts JSON.pretty_generate(metadata.value.value)
+puts JSON.pretty_generate(metadata)

@@ -73,10 +73,8 @@ class SubstrateClient
     methods = self.rpc_methods["methods"].map(&:underscore)
     methods << "method_list"
     methods << "get_storage_at"
-    methods << "get_metadata"
   end
 
-  # TODO: add cache
   def init(block_hash = nil)
     block_runtime_version = self.state_get_runtime_version(block_hash)
     @spec_name = block_runtime_version["specName"]
@@ -89,7 +87,8 @@ class SubstrateClient
 
   def get_metadata(block_hash)
     hex = self.state_get_metadata(block_hash)
-    Scale::Types::Metadata.decode(Scale::Bytes.new(hex))
+    metadata = Scale::Types::Metadata.decode(Scale::Bytes.new(hex))
+    metadata.value.value[:metadata]
   end
 
   # client.init(0x014e4248dd04a8c0342b603a66df0691361ac58e69595e248219afa7af87bdc7)
@@ -100,14 +99,14 @@ class SubstrateClient
 
     # TODO: uninit raise a exception
     # find the storage item from metadata
-    metadata_modules = @metadata.value.value[:metadata][:modules]
+    metadata_modules = metadata[:modules]
     metadata_module = metadata_modules.detect { |mm| mm[:name] == module_name }
     raise "Module '#{module_name}' not exist" unless metadata_module
     storage_item = metadata_module[:storage][:items].detect { |item| item[:name] == storage_function_name }
     raise "Storage item '#{storage_function_name}' not exist. \n#{metadata_module.inspect}" unless storage_item
 
-    if return_type = storage_item[:type][:Plain]
-      hasher = "Twox64Concat"
+    if storage_item[:type][:Plain]
+      return_type = storage_item[:type][:Plain]
     elsif map = storage_item[:type][:Map]
       raise "Storage call of type \"Map\" requires 1 parameter" if params.nil? || params.length != 1
 
@@ -134,7 +133,7 @@ class SubstrateClient
       params,
       hasher,
       hasher2,
-      @metadata.value.value[:metadata][:version]
+      metadata[:version]
     )
 
     # puts storage_hash
