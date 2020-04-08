@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    substrate_client.rb (0.1.0)
+    substrate_client.rb (0.1.1)
       activesupport (~> 5.2.4)
       eventmachine (~> 1.2.7)
       faye-websocket (~> 0.10.9)
