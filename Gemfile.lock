@@ -1,8 +1,8 @@
 PATH
   remote: .
   specs:
-    substrate_client (0.1.0)
-      activesupport (~> 5.0.0)
+    substrate_client.rb (0.1.0)
+      activesupport (~> 5.2.4)
       eventmachine (~> 1.2.7)
       faye-websocket (~> 0.10.9)
       scale.rb (~> 0.2.0)
@@ -11,7 +11,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (5.0.7.2)
+    activesupport (5.2.4.2)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 0.7, < 2)
       minitest (~> 5.1)
@@ -73,7 +73,7 @@ DEPENDENCIES
   pry
   rake (>= 12.3.3)
   rspec (~> 3.0)
-  substrate_client!
+  substrate_client.rb!
 
 BUNDLED WITH
    1.17.3
