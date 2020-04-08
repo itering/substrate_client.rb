@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "substrate_client/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "substrate_client"
+  spec.name          = "substrate_client.rb"
   spec.version       = SubstrateClient::VERSION
   spec.authors       = ["Wu Minzhe"]
   spec.email         = ["wuminzhe@gmail.com"]
