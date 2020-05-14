@@ -9,4 +9,5 @@ block_hash = ARGV[1]
 
 client = SubstrateClient.new(url)
 client.init(block_hash)
-puts JSON.pretty_generate(client.metadata.value.value)
+metadata = client.get_metadata(block_hash)
+puts JSON.pretty_generate(metadata.value)
