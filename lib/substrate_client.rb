@@ -22,6 +22,12 @@ class SubstrateClient
     init_ws
   end
 
+  def close
+    @ws.close
+    @reconnect_thread.kill
+    @em_thread.kill
+  end
+
   def request(method, params, subscription_callback=nil)
     queue = Queue.new
 
@@ -289,7 +295,7 @@ class SubstrateClient
       hasher2,
       metadata.value.value[:metadata][:version]
     )
-
+  
     result = self.state_get_storage(storage_hash, block_hash)
     return unless result
     Scale::Types.get(return_type).decode(Scale::Bytes.new(result))
@@ -369,15 +375,15 @@ class SubstrateClient
   def init_ws
     queue = Queue.new
 
-    Thread.new do
+    @em_thread = Thread.new do
       EM.run do
         start_connection
-        queue << "ok"
+        queue << true
       end
     end
 
     if queue.pop
-      Thread.new do
+      @reconnect_thread = Thread.new do
         loop do
           if @ws && @ws.ready_state == 3
             puts "try to reconnect"
