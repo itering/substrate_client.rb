@@ -1,43 +1,47 @@
-require "substrate_client/version"
+def ws_request(url, payload)
+  queue = TimeoutQueue.new
 
-require "logger"
-require "scale.rb"
-require "json"
-require "active_support"
-require "active_support/core_ext/string"
-require "websocket"
-require "timeout_queue"
-require "substrate_client_sync"
+  Thread.new do
+    EM.run do
+      ws = Faye::WebSocket::Client.new(url)
 
-class SubstrateClient
+      ws.on :open do |event|
+        ws.send(payload.to_json)
+      end
+
+      ws.on :message do |event|
+        if event.data.include?("jsonrpc")
+          queue << JSON.parse(event.data)
+          ws.close(3001, "data received")
+          EM.stop
+        end
+      end
+
+      ws.on :close do |event|
+        ws = nil
+      end
+    end
+  end
+
+  queue.pop true, 5
+rescue ThreadError => ex
+  raise RpcTimeout
+end
+
+class SubstrateClientSync
   class RpcError < StandardError; end
   class RpcTimeout < StandardError; end
-  class << self
-    attr_accessor :logger
-  end
-  SubstrateClient.logger = Logger.new(STDOUT)
-  SubstrateClient.logger.level = Logger::INFO
 
   attr_accessor :spec_name, :spec_version, :metadata
-  attr_accessor :ws
 
-  def initialize(url, spec_name: nil, onopen: nil)
+  def initialize(url, spec_name: nil)
     @url = url
     @request_id = 1
     @spec_name = spec_name
-    @onopen = onopen
     Scale::TypeRegistry.instance.load(spec_name)
-
-    init_ws
   end
 
-  def close
-    @ws.close
-  end
-
-  def request(method, params, subscription_callback=nil)
-    queue = TimeoutQueue.new
-
+  def request(method, params)
     payload = {
       "jsonrpc" => "2.0",
       "method" => method,
@@ -45,22 +49,12 @@ class SubstrateClient
       "id" => @request_id
     }
 
-    @callbacks[@request_id] = proc { |data| queue << data }
-    @ws.send(payload.to_json)
-    @request_id += 1
-    data = queue.pop(true, 5)
-
-    if not subscription_callback.nil? && data["result"]
-      @subscription_callbacks[data["result"]] = subscription_callback
-    end
-
+    data = ws_request(@url, payload)
     if data["error"]
       raise RpcError, data["error"]
     else
       data["result"]
     end
-  rescue ThreadError => ex
-    raise RpcTimeout
   end
 
   def init_runtime(block_hash: nil, block_id: nil)
@@ -144,46 +138,6 @@ class SubstrateClient
     invoke rpc_method(__method__)
   end
 
-  def chain_subscribe_all_heads(&callback)
-    request rpc_method(__method__), [], callback
-  end
-
-  def chain_unsubscribe_all_heads(subscription)
-    invoke rpc_method(__method__), subscription
-  end
-
-  def chain_subscribe_new_heads(&callback)
-    request rpc_method(__method__), [], callback
-  end
-
-  def chain_unsubscribe_new_heads(subscription)
-    invoke rpc_method(__method__), subscription
-  end
-
-  def chain_subscribe_finalized_heads(&callback)
-    request rpc_method(__method__), [], callback
-  end
-
-  def chain_unsubscribe_finalized_heads(subscription)
-    invoke rpc_method(__method__), subscription
-  end
-
-  def state_subscribe_runtime_version(&callback)
-    request rpc_method(__method__), [], callback
-  end
-
-  def state_unsubscribe_runtime_version(subscription)
-    invoke rpc_method(__method__), subscription
-  end
-
-  def state_subscribe_storage(keys, &callback)
-    request rpc_method(__method__), [keys], callback
-  end
-
-  def state_unsubscribe_storage(subscription)
-    invoke rpc_method(__method__), subscription
-  end
-
   # ################################################
   # custom methods based on origin rpc methods
   # ################################################
@@ -230,36 +184,6 @@ class SubstrateClient
     Scale::Types.get("Vec<EventRecord>").decode(scale_bytes).to_human
   end
 
-  def subscribe_block_events(&callback)
-    self.chain_subscribe_finalised_heads do |data|
-
-      block_number = data["params"]["result"]["number"].to_i(16) - 1
-      block_hash = data["params"]["result"]["parentHash"]
-
-      EM.defer(
-
-        proc {
-          events = get_block_events block_hash
-          { block_number: block_number, events: events }
-        },
-
-        proc { |result| 
-          begin
-            callback.call result
-          rescue => ex
-            SubstrateClient.logger.error ex.message
-            SubstrateClient.logger.error ex.backtrace.join("\n")
-          end
-        },
-
-        proc { |e|
-          SubstrateClient.logger.error e
-        }
-
-      )
-    end
-  end
-
   # Plain: client.get_storage("Sudo", "Key")
   # Plain: client.get_storage("Balances", "TotalIssuance")
   # Map: client.get_storage("System", "Account", ["0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"])
@@ -304,13 +228,7 @@ class SubstrateClient
       hasher2,
       metadata.value.value[:metadata][:version]
     )
-  
-    p module_name
-    p storage_name
-    p params
-    p hasher
-    p hasher2
-    p metadata.value.value[:metadata][:version]
+
     result = self.state_get_storage(storage_hash, block_hash)
     return unless result
     Scale::Types.get(return_type).decode(Scale::Bytes.new(result))
@@ -381,43 +299,13 @@ class SubstrateClient
     # chain_unsubscribeRuntimeVersion
     def real_method_name(method_name)
       segments = method_name.to_s.split("_")
-      segments[0] + "_" + segments[1] + segments[2..].map(&:capitalize).join
+      if segments.length == 1
+        segments[0]
+      else
+        segments[0] + "_" + segments[1] + segments[2..].map(&:capitalize).join
+      end
     end
 
-  end
-
-  private
-  def init_ws
-    @ws = Websocket.new(@url,
-
-      onopen: proc do |event|
-        @callbacks = {}
-        @subscription_callbacks = {}
-        @onopen.call event if not @onopen.nil?
-      end,
-
-      onmessage: proc do |event| 
-        if event.data.include?("jsonrpc")
-          begin
-            data = JSON.parse event.data
-
-            if data["params"]
-              if @subscription_callbacks[data["params"]["subscription"]]
-                @subscription_callbacks[data["params"]["subscription"]].call data
-              end
-            else
-              @callbacks[data["id"]].call data
-              @callbacks.delete(data["id"])
-            end
-
-          rescue => ex
-            SubstrateClient.logger.error ex.message
-            SubstrateClient.logger.error ex.backtrace.join("\n")
-          end
-        end
-      end
-
-    )
   end
 
 end
