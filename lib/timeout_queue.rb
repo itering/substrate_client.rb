@@ -1,3 +1,4 @@
+# https://vaneyckt.io/posts/ruby_concurrency_building_a_timeout_queue/
 class TimeoutQueue
   def initialize
     @elems = []
