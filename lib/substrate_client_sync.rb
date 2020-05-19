@@ -23,9 +23,9 @@ def ws_request(url, payload)
     end
   end
 
-  queue.pop true, 5
+  queue.pop true, 10
 rescue ThreadError => ex
-  raise RpcTimeout
+  raise SubstrateClientSync::RpcTimeout
 end
 
 class SubstrateClientSync
