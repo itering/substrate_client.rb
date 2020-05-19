@@ -1,11 +1,11 @@
 require "substrate_client/version"
 
+require 'logger'
 require "scale.rb"
-require "faye/websocket"
-require "eventmachine"
 require "json"
 require "active_support"
 require "active_support/core_ext/string"
+require "websocket_client"
 
 class SubstrateClient
   class RpcError < StandardError; end
@@ -13,10 +13,11 @@ class SubstrateClient
   attr_accessor :spec_name, :spec_version, :metadata
   attr_reader :ws
 
-  def initialize(url: , spec_name: nil)
+  def initialize(url, spec_name: nil, onopen: nil)
     @url = url
     @request_id = 1
     @spec_name = spec_name
+    @onopen = onopen
     Scale::TypeRegistry.instance.load(spec_name)
 
     init_ws
@@ -24,8 +25,6 @@ class SubstrateClient
 
   def close
     @ws.close
-    @reconnect_thread.kill
-    @em_thread.kill
   end
 
   def request(method, params, subscription_callback=nil)
@@ -296,6 +295,12 @@ class SubstrateClient
       metadata.value.value[:metadata][:version]
     )
   
+    p module_name
+    p storage_name
+    p params
+    p hasher
+    p hasher2
+    p metadata.value.value[:metadata][:version]
     result = self.state_get_storage(storage_hash, block_hash)
     return unless result
     Scale::Types.get(return_type).decode(Scale::Bytes.new(result))
@@ -373,55 +378,36 @@ class SubstrateClient
 
   private
   def init_ws
-    queue = Queue.new
+    @ws = WebsocketClient.new(@url,
 
-    @em_thread = Thread.new do
-      EM.run do
-        start_connection
-        queue << true
-      end
-    end
+      onopen: proc do |event|
+        @callbacks = {}
+        @subscription_callbacks = {}
+        @onopen.call event if not @onopen.nil?
+      end,
 
-    if queue.pop
-      @reconnect_thread = Thread.new do
-        loop do
-          if @ws && @ws.ready_state == 3
-            puts "try to reconnect"
-            start_connection
-          end
+      onmessage: proc do |event| 
+        if event.data.include?("jsonrpc")
+          begin
+            data = JSON.parse event.data
 
-          sleep(3)
-        end
-      end
-    end
-  end
-
-  def start_connection
-    @callbacks = {}
-    @subscription_callbacks = {}
-
-    @ws = Faye::WebSocket::Client.new(@url)
-    @ws.on :message do |event|
-      # p [:message, event.data]
-      if event.data.include?("jsonrpc")
-        begin
-          data = JSON.parse event.data
-
-          if data["params"]
-            if @subscription_callbacks[data["params"]["subscription"]]
-              @subscription_callbacks[data["params"]["subscription"]].call data
+            if data["params"]
+              if @subscription_callbacks[data["params"]["subscription"]]
+                @subscription_callbacks[data["params"]["subscription"]].call data
+              end
+            else
+              @callbacks[data["id"]].call data
+              @callbacks.delete(data["id"])
             end
-          else
-            @callbacks[data["id"]].call data
-            @callbacks.delete(data["id"])
-          end
 
-        rescue => ex
-          puts ex.message
-          puts ex.backtrace.join("\n")
+          rescue => ex
+            puts ex.message
+            puts ex.backtrace.join("\n")
+          end
         end
       end
-    end
+
+    )
   end
 
 end
