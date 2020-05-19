@@ -1,17 +1,24 @@
 require "substrate_client/version"
 
-require 'logger'
+require "logger"
 require "scale.rb"
 require "json"
 require "active_support"
 require "active_support/core_ext/string"
-require "websocket_client"
+require "websocket"
+require "timeout_queue"
 
 class SubstrateClient
   class RpcError < StandardError; end
+  class RpcTimeout < StandardError; end
+  class << self
+    attr_accessor :logger
+  end
+  SubstrateClient.logger = Logger.new(STDOUT)
+  SubstrateClient.logger.level = Logger::INFO
 
   attr_accessor :spec_name, :spec_version, :metadata
-  attr_reader :ws
+  attr_accessor :ws
 
   def initialize(url, spec_name: nil, onopen: nil)
     @url = url
@@ -28,7 +35,7 @@ class SubstrateClient
   end
 
   def request(method, params, subscription_callback=nil)
-    queue = Queue.new
+    queue = TimeoutQueue.new
 
     payload = {
       "jsonrpc" => "2.0",
@@ -40,7 +47,7 @@ class SubstrateClient
     @callbacks[@request_id] = proc { |data| queue << data }
     @ws.send(payload.to_json)
     @request_id += 1
-    data = queue.pop
+    data = queue.pop(true, 5)
 
     if not subscription_callback.nil? && data["result"]
       @subscription_callbacks[data["result"]] = subscription_callback
@@ -51,6 +58,8 @@ class SubstrateClient
     else
       data["result"]
     end
+  rescue ThreadError => ex
+    raise RpcTimeout
   end
 
   def init_runtime(block_hash: nil, block_id: nil)
@@ -237,13 +246,13 @@ class SubstrateClient
           begin
             callback.call result
           rescue => ex
-            puts ex.message
-            puts ex.backtrace.join("\n")
+            SubstrateClient.logger.error ex.message
+            SubstrateClient.logger.error ex.backtrace.join("\n")
           end
         },
 
         proc { |e|
-          puts e
+          SubstrateClient.logger.error e
         }
 
       )
@@ -378,7 +387,7 @@ class SubstrateClient
 
   private
   def init_ws
-    @ws = WebsocketClient.new(@url,
+    @ws = Websocket.new(@url,
 
       onopen: proc do |event|
         @callbacks = {}
@@ -401,8 +410,8 @@ class SubstrateClient
             end
 
           rescue => ex
-            puts ex.message
-            puts ex.backtrace.join("\n")
+            SubstrateClient.logger.error ex.message
+            SubstrateClient.logger.error ex.backtrace.join("\n")
           end
         end
       end
