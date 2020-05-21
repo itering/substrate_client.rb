@@ -28,61 +28,77 @@ Or install it yourself as:
 require "substrate_client"
 
 client = SubstrateClient.new("wss://kusama-rpc.polkadot.io/")
-puts client.method_list
+client.method_list do |methods|
+  p methods
+end
 ```
 The rpc methods can be dynamically called by its name, so the methods returned by this method can all be used.
 
-#### hard-coded rpc method
+
+
+#### rpc methods
 
 But, in order to show the parameters more clearly, some important or frequently used methods are hard-coded:
 
-- chain_get_finalised_head
+- chain_get_finalised_head(&callback)
 
   Get hash of the last finalized block in the canon chain
 
+  ```ruby
+  client.chain_get_finalised_head do |head|
+    p head 
+  end
+  ```
+
   
 
-- chain_get_head
+- chain_get_head(&callback)
 
-- chain_get_header(block_hash = nil)
+  Retrieves the header
+
+  
+
+- chain_get_header(block_hash = nil, &callback)
 
   Retrieves the header for a specific block
 
   
 
-- chain_get_block(block_hash = nil)
+- chain_get_block(block_hash = nil, &callback)
 
   Get header and body of a relay chain block
 
   
 
-- chain_get_block_hash(block_id)
+- chain_get_block_hash(block_id, &callback)
 
   Get the block hash for a specific block
 
   
 
-- chain_get_runtime_version(block_hash = nil)
+- chain_get_runtime_version(block_hash = nil, &callback)
 
   Get the runtime version for a specific block
 
   
 
-- state_get_metadata(block_hash = nil)
+- state_get_metadata(block_hash = nil, &callback)
 
   Returns the runtime metadata by block
 
   
 
-- state_get_storage(storage_key, block_hash = nil)
+- state_get_storage(storage_key, block_hash = nil, &callback)
 
   Retrieves the storage for a key
 
   
 
-- system_name
+- system_name(&callback)
 
-- system_version
+  
+
+- system_version(&callback)
 
   
 
@@ -110,19 +126,10 @@ But, in order to show the parameters more clearly, some important or frequently 
 
   Retrieves the best header via subscription. This will return data continuously until you unsubscribe the subscription.
 
-  ```ruby
-  subscription = client.chain_subscribe_new_heads do |data|
-    p data
-  end
-  ```
-
 - chain_unsubscribe_new_heads(subscription)
 
   Unsubscribe the best header subscription.
 
-  ```ruby
-  client.chain_unsubscribe_new_heads(subscription)
-  ```
 
 
 
@@ -130,22 +137,12 @@ But, in order to show the parameters more clearly, some important or frequently 
 
   Retrieves the best finalized header via subscription. This will return data continuously until you unsubscribe the subscription.
 
-  ```ruby
-  subscription = client.chain_subscribe_finalized_heads do |data|
-    p data
-  end
-  ```
-
 - chain_unsubscribe_finalized_heads(subscription)
 
   Unsubscribe the best finalized header subscription.
 
-  ```ruby
-  client.chain_unsubscribe_finalized_heads(subscription)
-  ```
-
   
-
+  
 - state_subscribe_runtime_version(&callback)
 
   Retrieves the runtime version via subscription. 
@@ -175,30 +172,54 @@ But, in order to show the parameters more clearly, some important or frequently 
 
 These methods will encode the parameters and decode the returned data
 
-- get_block_number(block_hash)
+- get_block_number(block_hash, &callback)
 
-- get_metadata(block_hash)
+- get_metadata(block_hash, &callback)
 
-- get_block(block_hash=nil)
+- get_block(block_hash=nil, &callback)
 
-- get_block_events(block_hash)
+- get_block_events(block_hash, &callback)
 
-- subscribe_block_events(&callback)
+- subscribe_block_events(&callback, &callback)
 
-- get_storage(module_name, storage_name, params = nil, block_hash = nil)
-
-  ```ruby
-  client.get_storage("Sudo", "Key")
-  client.get_storage("Balances", "TotalIssuance")
-  client.get_storage("System", "Account", ["0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"])
-  client.get_storage("ImOnline", "AuthoredBlocks", [2818, "0x749ddc93a65dfec3af27cc7478212cb7d4b0c0357fef35a0163966ab5333b757"])
-  ```
-
-- compose_call(module_name, call_name, params, block_hash=nil)
+- get_storage(module_name, storage_name, params = nil, block_hash = nil, &callback)
 
   ```ruby
-  compose_call "Balances", "Transfer", { dest: "0x586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409", value: 1_000_000_000_000 }
+  client.get_storage("Balances", "TotalIssuance", nil, nil) do |storage|
+    p storage
+  end
+  
+  client.get_storage("System", "Account", ["0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"], nil) do |storage|
+    p storage
+  end
+  
+  client.get_storage("ImOnline", "AuthoredBlocks", [2818, "0x749ddc93a65dfec3af27cc7478212cb7d4b0c0357fef35a0163966ab5333b757"], nil) do |storage|
+    p storage
+  end
   ```
+
+- compose_call(module_name, call_name, params, block_hash=nil, &callback)
+
+  ```ruby
+  compose_call "Balances", "Transfer", { dest: "0x586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409", value: 1_000_000_000_000 }, nil do |hex|
+    p hex
+  end
+  ```
+
+
+
+## Synchronized client
+
+There is also a synchronized version of the client, which is disconnected every time the data is retrieved. It is very convenient in some situations. But this version cannot use the subscription interface.
+
+```ruby
+client = SubstrateClientSync.new "wss://kusama-rpc.polkadot.io/"
+p client.method_list
+p client.chain_get_head
+p client.chain_get_finalised_head
+p client.chain_get_header(block_hash = nil)
+...
+```
 
 
 
