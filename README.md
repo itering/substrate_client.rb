@@ -107,7 +107,7 @@ But, in order to show the parameters more clearly, some important or frequently 
   Retrieves the newest header via subscription. This will return data continuously until you unsubscribe the subscription.
 
   ```ruby
-  subscription = client.chain_subscribe_new_heads do |data| 
+  subscription = client.chain_subscribe_all_heads do |data| 
     p data 
   end
   ```
@@ -221,7 +221,53 @@ p client.chain_get_header(block_hash = nil)
 ...
 ```
 
+## Docker
 
+1. update to latest image
+
+   `docker pull itering/substrate_client:latest`
+
+2. Run image:
+
+   `docker run -it itering/substrate_client:latest`
+
+   This  will enter the container with a linux shell opened. 
+
+   ```shell
+   /usr/src/app # 
+   ```
+
+3. Type `rspec` to run all tests
+
+   ```shell
+   /usr/src/app # rspec
+   ...................
+   
+   Finished in 0.00883 seconds (files took 0.09656 seconds to load)
+   5 examples, 0 failures
+   ```
+
+4. Or, type `./bin/console` to enter the ruby interactive environment and run any decode or encode code
+
+   ```shell
+   /usr/src/app # ./bin/console
+   [1] pry(main)> client = SubstrateClient.new("wss://kusama-rpc.polkadot.io/")
+   => #<SubstrateClient:0x000055a78f124f58 ...
+   [2] pry(main)> client.method_list do |methods| p methods end
+   => ...
+   [3] pry(main)> subscription = client.chain_subscribe_new_heads do |data| p data end
+   ...
+   ```
+
+5. Or, SubstrateClientSync:
+
+   ```shell
+   /usr/src/app # ./bin/console
+   [1] pry(main)> client = SubstrateClientSync.new("wss://kusama-rpc.polkadot.io/", spec_name: "kusama")
+   => #<SubstrateClientSync:0x000055a78edfd6e0 @request_id=1, @spec_name="kusama", @url="wss://kusama-rpc.polkadot.io/">
+   [2] pry(main)> client.chain_get_head
+   => "0xb3c3a220d4639b7c62f179f534b3a66336a115ebc18f13db053f0c57437c45fc"
+   ```
 
 ## Development
 

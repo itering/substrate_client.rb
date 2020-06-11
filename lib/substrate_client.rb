@@ -46,6 +46,10 @@ class SubstrateClient
       "id" => @request_id
     }
 
+    while @callbacks.nil?
+      sleep(1)
+    end
+
     @callbacks[@request_id] = proc do |data| 
       if not subscription_callback.nil? && data["result"]
         @subscription_callbacks[data["result"]] = subscription_callback
@@ -80,7 +84,7 @@ class SubstrateClient
       if data["error"]
         Thread.main.raise RpcError, data["error"]
       else
-        callback.call data["result"]
+        callback.call data["result"] unless callback.nil?
       end
     }
   end
@@ -109,7 +113,7 @@ class SubstrateClient
     invoke rpc_method(__method__), [], callback
   end
 
-  def chain_get_finalised_head
+  def chain_get_finalised_head(&callback)
     invoke rpc_method(__method__), [], callback
   end
 
@@ -149,40 +153,40 @@ class SubstrateClient
     request rpc_method(__method__), [], subscription_callback: callback
   end
 
-  def chain_unsubscribe_all_heads(subscription, &callback)
-    invoke rpc_method(__method__), [ subscription ], callback
+  def chain_unsubscribe_all_heads(subscription)
+    invoke rpc_method(__method__), [ subscription ], nil
   end
 
   def chain_subscribe_new_heads(&callback)
     request rpc_method(__method__), [], subscription_callback: callback
   end
 
-  def chain_unsubscribe_new_heads(subscription, &callback)
-    invoke rpc_method(__method__), [ subscription ], callback
+  def chain_unsubscribe_new_heads(subscription)
+    invoke rpc_method(__method__), [ subscription ], nil 
   end
 
   def chain_subscribe_finalized_heads(&callback)
     request rpc_method(__method__), [], subscription_callback: callback
   end
 
-  def chain_unsubscribe_finalized_heads(subscription, &callback)
-    invoke rpc_method(__method__), [ subscription ], callback
+  def chain_unsubscribe_finalized_heads(subscription)
+    invoke rpc_method(__method__), [ subscription ], nil
   end
 
   def state_subscribe_runtime_version(&callback)
     request rpc_method(__method__), [], subscription_callback: callback
   end
 
-  def state_unsubscribe_runtime_version(subscription, &callback)
-    invoke rpc_method(__method__), [ subscription ], callback
+  def state_unsubscribe_runtime_version(subscription)
+    invoke rpc_method(__method__), [ subscription ], nil
   end
 
   def state_subscribe_storage(keys, &callback)
     request rpc_method(__method__), [keys], subscription_callback: callback
   end
 
-  def state_unsubscribe_storage(subscription, &callback)
-    invoke rpc_method(__method__), [ subscription ], callback
+  def state_unsubscribe_storage(subscription)
+    invoke rpc_method(__method__), [ subscription ], nil 
   end
 
   # ################################################
