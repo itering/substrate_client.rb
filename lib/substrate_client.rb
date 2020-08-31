@@ -27,7 +27,7 @@ class SubstrateClient
     @request_id = 1
     @spec_name = spec_name
     @onopen = onopen
-    Scale::TypeRegistry.instance.load(spec_name)
+    Scale::TypeRegistry.instance.load(spec_name: spec_name)
 
     init_ws
 
