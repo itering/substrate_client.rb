@@ -48,31 +48,77 @@ client.chain_getBlockHash(1024)
 
 ### Origin rpc methods
 
-- `client.chain_getFinalisedHead`
-- `client.chain_getHead`
-- `client.chain_getHeader(block_hash = nil)`
-- `client.chain_get_block(block_hash = nil)`
-- `client.chain_get_block_hash(block_id)`
-- `client.chain_get_runtime_version(block_hash = nil)`
-- `client.state_get_metadata(block_hash = nil)`
-
-- `client.state_get_storage(storage_key, block_hash = nil)`
-- `client.system_name`
-- `client.system_version`
+- `account_nextIndex`
+* `author_hasKey`
+* `author_hasSessionKeys`
+* `author_insertKey`
+* `author_pendingExtrinsics`
+* `author_removeExtrinsic`
+* `author_rotateKeys`
+* `author_submitExtrinsic`
+* `babe_epochAuthorship`
+* `chain_getBlock(block_hash = nil)`
+* `chain_getBlockHash(block_id)`
+* `chain_getFinalisedHead`
+* `chain_getFinalizedHead`
+* `chain_getHead`
+* `chain_getHeader(block_hash = nil)`
+* `chain_getRuntimeVersion(block_hash = nil)`
+* `childstate_getKeys`
+* `childstate_getStorage`
+* `childstate_getStorageHash`
+* `childstate_getStorageSize`
+* `grandpa_roundState`
+* `offchain_localStorageGet`
+* `offchain_localStorageSet`
+* `payment_queryInfo`
+* `state_call`
+* `state_callAt`
+* `state_getKeys`
+* `state_getKeysPaged`
+* `state_getKeysPagedAt`
+* `state_getMetadata(block_hash = nil)`
+* `state_getPairs`
+* `state_getReadProof`
+* `state_getRuntimeVersion`
+* `state_getStorage(storage_key, block_hash = nil)`
+* `state_getStorageAt`
+* `state_getStorageHash`
+* `state_getStorageHashAt`
+* `state_getStorageSize`
+* `state_getStorageSizeAt`
+* `state_queryStorage`
+* `state_queryStorageAt`
+* `system_accountNextIndex`
+* `system_addReservedPeer`
+* `system_chain`
+* `system_chainType`
+* `system_dryRun`
+* `system_dryRunAt`
+* `system_health`
+* `system_localListenAddresses`
+* `system_localPeerId`
+* `system_name`
+* `system_networkState`
+* `system_nodeRoles`
+* `system_peers`
+* `system_properties`
+* `system_removeReservedPeer`
+- `system_version`
 
 ### Wrap methods
 
 These methods will encode the parameters and decode the returned data
 
-- `client.get_block_number(block_hash)`
+- `get_block_number(block_hash)`
 
-- `client.get_metadata(block_hash)`
+- `get_metadata(block_hash)`
 
-- `client.get_block(block_hash=nil)`
+- `get_block(block_hash=nil)`
 
-- `client.get_block_events(block_hash)`
+- `get_block_events(block_hash)`
 
-- `client.get_storage(module_name, storage_name, params = nil, block_hash = nil)`
+- `get_storage(module_name, storage_name, params = nil, block_hash = nil)`
 
   ```ruby
   client.get_storage("Balances", "TotalIssuance", nil, nil)
