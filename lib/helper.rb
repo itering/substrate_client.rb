@@ -1,7 +1,7 @@
 
 class SubstrateClient::Helper
   class << self
-    def generate_storage_hash_from_metadata(metadata, module_name, storage_name, params = nil)
+    def generate_storage_key_from_metadata(metadata, module_name, storage_name, params = nil)
       # find the storage item from metadata
       metadata_modules = metadata.value.value[:metadata][:modules]
       metadata_module = metadata_modules.detect { |mm| mm[:name] == module_name }
@@ -31,7 +31,7 @@ class SubstrateClient::Helper
         raise NotImplementedError
       end
 
-      storage_hash = generate_storage_hash(
+      storage_key = generate_storage_key(
         module_name,
         storage_name,
         params,
@@ -39,12 +39,12 @@ class SubstrateClient::Helper
         hasher2,
         metadata.value.value[:metadata][:version]
       )
-      [storage_hash, return_type]
+      [storage_key, return_type]
     end
 
-    def generate_storage_hash(module_name, storage_name, params = nil, hasher = nil, hasher2 = nil, metadata_version = nil)
+    def generate_storage_key(module_name, storage_name, params = nil, hasher = nil, hasher2 = nil, metadata_version = nil)
       if metadata_version and metadata_version >= 9
-        storage_hash = Crypto.twox128(module_name) + Crypto.twox128(storage_name)
+        storage_key = Crypto.twox128(module_name) + Crypto.twox128(storage_name)
 
         params&.each_with_index do |param, index|
           if index == 0
@@ -57,22 +57,22 @@ class SubstrateClient::Helper
 
           param_key = param.hex_to_bytes
           param_hasher = "Twox128" if param_hasher.nil?
-          storage_hash += Crypto.send param_hasher.underscore, param_key
+          storage_key += Crypto.send param_hasher.underscore, param_key
         end
 
-        "0x#{storage_hash}"
+        "0x#{storage_key}"
       else
         # TODO: add test
-        storage_hash = module_name + " " + storage_name
+        storage_key = module_name + " " + storage_name
 
         unless params.nil?
           params = [params] if params.class != ::Array
           params_key = params.join("")
           hasher = "Twox128" if hasher.nil?
-          storage_hash += params_key.hex_to_bytes.bytes_to_utf8 
+          storage_key += params_key.hex_to_bytes.bytes_to_utf8 
         end
 
-        "0x#{Crypto.send( hasher.underscore, storage_hash )}"
+        "0x#{Crypto.send( hasher.underscore, storage_key )}"
       end
     end
 
