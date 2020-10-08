@@ -114,16 +114,5 @@ class SubstrateClient::Helper
       block
     end
 
-    # chain_unsubscribe_runtime_version
-    # => 
-    # chain_unsubscribeRuntimeVersion
-    def real_method_name(method_name)
-      segments = method_name.to_s.split("_")
-      if segments.length == 1
-        segments[0]
-      else
-        segments[0] + "_" + segments[1] + segments[2..].map(&:capitalize).join
-      end
-    end
   end
 end

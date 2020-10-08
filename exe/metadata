@@ -3,10 +3,10 @@
 require "substrate_client"
 require "json"
 
-url = ARGV[0] || "wss://kusama-rpc.polkadot.io/"
-client = SubstrateClientSync.new(url)
+url = ARGV[0] || "wss://kusama-rpc.polkadot.io"
+client = SubstrateClient.new(url)
 
-block_hash = ARGV[1] || client.chain_get_finalised_head
+block_hash = ARGV[1] || client.chain_getFinalisedHead
 
 metadata = client.get_metadata(block_hash)
 puts JSON.pretty_generate(metadata.value.to_human)
