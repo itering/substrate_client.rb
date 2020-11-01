@@ -18,7 +18,8 @@ class SubstrateClient::Helper
         return_type = map[:value]
         # TODO: decode to account id if param is address
         # params[0] = decode(params[0]) if map[:key] == "AccountId"
-        params[0] = Scale::Types.get(map[:key]).new(params[0]).encode
+        type = Scale::Types.get(map[:key])
+        params[0] = type.new(params[0]).encode
       elsif map = storage_item[:type][:DoubleMap]
         raise "Storage call of type \"DoubleMapType\" requires 2 parameters" if params.nil? || params.length != 2
 

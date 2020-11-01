@@ -37,8 +37,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "activesupport", "~> 5.2.4"
-  spec.add_dependency "scale.rb", "~> 0.2.6"
+  spec.add_dependency "scale.rb", "~> 0.2.11"
   spec.add_dependency "kontena-websocket-client", "~> 0.1.1"
+  spec.add_dependency "substrate_common.rb", "~> 0.1.9"
 
   spec.add_development_dependency "bundler", "~> 1.17"
   spec.add_development_dependency "rake", ">= 12.3.3"

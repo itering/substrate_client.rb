@@ -21,12 +21,13 @@ def ws_request(url, payload)
 
   return result
 rescue Kontena::Websocket::CloseError => e
-  puts e.code, e.reason
+  raise SubstrateClient::WebsocketError, e.reason
 rescue Kontena::Websocket::Error => e
-  puts e
+  raise SubstrateClient::WebsocketError, e.reason
 end
 
 class SubstrateClient
+  class WebsocketError < StandardError; end
   class RpcError < StandardError; end
   class RpcTimeout < StandardError; end
 
@@ -135,6 +136,10 @@ class SubstrateClient
   def compose_call(module_name, call_name, params, block_hash=nil)
     self.init_runtime(block_hash)
     SubstrateClient::Helper.compose_call_from_metadata(@metadata, module_name, call_name, params)
+  end
+
+  def generate_storage_hash_from_data(storage_hex_data)
+    "0x" + Crypto.blake2_256(Scale::Bytes.new(storage_hex_data).bytes)
   end
 
 end
