@@ -4,7 +4,7 @@ PATH
     substrate_client.rb (0.1.9)
       activesupport (~> 5.2.4)
       kontena-websocket-client (~> 0.1.1)
-      scale.rb (~> 0.2.12)
+      scale.rb (~> 0.2.13)
       substrate_common.rb (~> 0.1.9)
 
 GEM
@@ -44,7 +44,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.9.0)
     rspec-support (3.9.2)
-    scale.rb (0.2.12)
+    scale.rb (0.2.13)
       activesupport (>= 4.0.0)
       json (~> 2.3.0)
       substrate_common.rb (~> 0.1.9)
@@ -55,7 +55,7 @@ GEM
       xxhash
     thor (0.19.4)
     thread_safe (0.3.6)
-    tzinfo (1.2.7)
+    tzinfo (1.2.8)
       thread_safe (~> 0.1)
     websocket-driver (0.6.5)
       websocket-extensions (>= 0.1.0)
