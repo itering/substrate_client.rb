@@ -1,4 +1,7 @@
+
 # SubstrateClient
+
+*Deprecated*, the client was merged into https://github.com/itering/scale.rb
 
 This is a library of interfaces for communicating with Substrate nodes. It provides application developers the ability to query a node and interact with the Substrate chains using Ruby.
 
