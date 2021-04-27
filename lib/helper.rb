@@ -58,7 +58,11 @@ class SubstrateClient::Helper
 
           param_key = param.hex_to_bytes
           param_hasher = "Twox128" if param_hasher.nil?
-          storage_key += Crypto.send param_hasher.underscore, param_key
+          if param_hasher.to_s.underscore == "identity"
+            storage_key += param
+          else
+            storage_key += Crypto.send param_hasher.underscore, param_key
+          end
         end
 
         "0x#{storage_key}"
